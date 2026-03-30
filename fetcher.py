@@ -85,11 +85,33 @@ class PodcastFetcher:
             logger.error(f"下载媒体素材时失败: {e}")
             return False
 
-    def _download_file(self, url: str, path: Path) -> None:
+    def _download_file(self, url: str, path: Path, referer: str | None = None) -> None:
         """分块下载大文件的工具方法"""
-        response = requests.get(url, stream=True, timeout=30)
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/123.0.0.0 Safari/537.36"
+            ),
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+
+        if referer:
+            headers["Referer"] = referer
+
+        response = requests.get(
+            url,
+            headers=headers,
+            stream=True,
+            timeout=(10, 120),
+            allow_redirects=True,
+        )
         response.raise_for_status()
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+
         with open(path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk: # filter out keep-alive new chunks
+            for chunk in response.iter_content(chunk_size=1024 * 256):
+                if chunk:
                     f.write(chunk)

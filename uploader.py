@@ -71,11 +71,26 @@ class PodcastUploader:
             
         page = self.context.new_page()
         try:
-            logger.info(f"正在前往发布页面: {config.target_upload_url}")
+            # 步骤 1：进入初始的音频上传页面
+            logger.info(f"正在前往音频上传页面: {config.target_upload_url}")
             page.goto(config.target_upload_url)
-            
-            # 等待网络空闲确保页面加载完毕
             page.wait_for_load_state("networkidle")
+            
+            logger.info(f"上传音频文件: {episode.local_audio_path.name}")
+            page.locator(config.audio_upload_selector).set_input_files(str(episode.local_audio_path))
+            
+            # TODO: 有些平台音频在真正上传完之前是不让点击下一步的，这里可以额外判断特定类的显隐状态
+            logger.info("等待音频读取/上传就绪 (保守设定等待 10 秒，可视平台自行修改)...")
+            page.wait_for_timeout(10000)
+            
+            logger.info("点击【下一步】按钮...")
+            page.locator(config.next_button_selector).click()
+            
+            # 步骤 2：进入信息编辑页面
+            logger.info("等待进入信息编辑页面...")
+            page.wait_for_load_state("networkidle")
+            # 可选：等待标题输入框出现，确认页面已经切换成功
+            # page.wait_for_selector(config.title_selector, state="visible")
             
             logger.info(f"填写标题: {episode.title}")
             page.locator(config.title_selector).fill(episode.title)
@@ -83,25 +98,20 @@ class PodcastUploader:
             logger.info("填写描述...")
             page.locator(config.desc_selector).fill(episode.description)
             
-            logger.info(f"上传音频文件: {episode.local_audio_path.name}")
-            page.locator(config.audio_upload_selector).set_input_files(str(episode.local_audio_path))
-            
             if episode.local_cover_path:
                 logger.info(f"上传封面文件: {episode.local_cover_path.name}")
                 page.locator(config.cover_upload_selector).set_input_files(str(episode.local_cover_path))
+                # 等待封面上传完毕
+                page.wait_for_timeout(3000)
             
-            # TODO: 有些平台音频/图片在真正上传完之前是不让提交的，这里可以额外判断特定类的显隐状态
-            logger.info("等待资源就绪上传后提交 (目前设定死等 10 秒，可视平台自行修改)...")
-            page.wait_for_timeout(10000)
-            
-            logger.info("点击提交发布按钮！")
+            logger.info("点击【提交/完成】发布按钮！")
             page.locator(config.submit_button_selector).click()
             
-            # TODO: 验证发布是否成功，比如等待“上传成功”元素的出现
+            # TODO: 判断成功的特征标识，比如等待“上传成功”元素的出现
             # page.wait_for_selector("text='Upload Successful'", timeout=120000)
-            page.wait_for_timeout(5000) # 这里模拟等待后端响应成功
+            page.wait_for_timeout(5000) 
             
-            logger.info("✅ 自动化上传流程顺利完成！")
+            logger.info("✅ 自动化分步上传流程顺利完成！")
             return True
             
         except Exception as e:
