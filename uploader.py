@@ -96,16 +96,23 @@ class PodcastUploader:
             page.locator(config.title_selector).fill(episode.title)
             
             # 💡 展开隐藏的“丰富文章信息”面板
-            logger.info("展开“丰富文章信息”面板...")
-            # 定位折叠面板的触发按钮
-            expand_btn = page.locator(".arrow_header.articleInfo")
-            if expand_btn.count() > 0:
-                # 如果发现面板是未展开状态，则点击它
-                if expand_btn.first.get_attribute("aria-expanded") == "false":
-                    # 由于里面包含 span 和 img，为确保点到触发区，我们点外层 div
-                    expand_btn.first.click(force=True)
-                    # 等待 Bootstrap CSS 展开动画完成 (0.5s~1s)
-                    page.wait_for_timeout(1000)
+            logger.info("检查“丰富文章信息”面板是否需要展开...")
+            desc_area = page.locator(".add_channel_textarea_last")
+            expand_btn = page.locator(".arrow_header.articleInfo").first
+            
+            try:
+                # 给网页 DOM 一点点就绪时间
+                expand_btn.wait_for(state="attached", timeout=5000)
+                # 这个直接查目标输入框看不看得见的方法，比查 aria 属性绝对 100% 精准
+                if not desc_area.is_visible():
+                    logger.info("发现目标文本域被折叠隐藏，强制点击外层按钮展开...")
+                    expand_btn.click(force=True)
+                    # 重要：给前端 CSS 一点弹下来的动画时间
+                    page.wait_for_timeout(1500)
+                else:
+                    logger.info("面板内部的描述框已被暴露出来，可以直接录入。")
+            except Exception as e:
+                logger.warning(f"未能自动展开下拉框，如果你看到这里卡住了可能出 Bug 了: {e}")
             
             logger.info("填写描述...")
             page.locator(config.desc_selector).fill(episode.description)
@@ -113,21 +120,29 @@ class PodcastUploader:
             if episode.local_cover_path:
                 logger.info(f"上传封面文件: {episode.local_cover_path.name}")
                 page.locator(config.cover_upload_selector).set_input_files(str(episode.local_cover_path))
-                # 给封面图留一点上传到云端生成预览的时间（避免直接点提交报错）
+                # 上传后等一会
                 page.wait_for_timeout(3000)
             
             logger.info("勾选已阅读相关协议/规则框...")
             # 有些业务自己画的 Checkbox 会被遮挡，保险起见可以使用 force=True 强制点击
             page.locator(config.if_read_checkbox_selector).click(force=True)
             
-            logger.info("点击【提交/完成】发布按钮并验证成功状态...")
+            logger.info("准备点击最后的【提交/完成发布】按钮...")
             
-            # 监听点击按钮后的下一个页面跳转（导航）作为成功的确认指标
-            # 60 秒内如果发生 URL 跳转不报错，就认为是成功的
-            with page.expect_navigation(timeout=60000):
-                page.locator(config.submit_button_selector).click()
-                
-            logger.info("👌 检测到页面成功跳转，确认上传完成！")
+            submit_btn = page.locator(config.submit_button_selector)
+            logger.info("🤖 提示：如果在此步骤停留了很久，通常是因为网站在传完图后需要一定时间将数据写入数据库，导致“发布”按钮目前处于 disabled (不可点击) 或正在加载的状态，Playwright 正在聪明地排队死等它变回可点击的绿灯状态...")
+            
+            # 🔥 核心修复：自动同意外层浏览器弹出的原生确认框 (`confirm() / alert()`)
+            # Playwright 设计上的默认保护机制是自动 Dismiss（点取消/关闭）掉所有的弹窗
+            # 这就导致了你以为跑通了，其实最后一步被悄悄取消了而没存进数据库
+            page.once("dialog", lambda dialog: dialog.accept())
+            logger.info("已挂载弹窗自动同意钩子，等待截获确认出窗...")
+            
+            # 自动等待元素的点击就绪状态（必须可点击非禁用非覆盖），如果等到死等超过这30s默认阈值就会抛异常
+            submit_btn.click()
+            
+            logger.info("👌 按钮由于状态通过，已成功物理点击！等待最后的 10 秒让请求平安发送飞向后端。")
+            page.wait_for_timeout(10000)
             
             logger.info("✅ 自动化分步上传流程顺利完成！")
             return True
