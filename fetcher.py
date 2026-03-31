@@ -11,8 +11,8 @@ class PodcastFetcher:
         self.rss_url = rss_url
         self.download_dir = download_dir
 
-    def fetch_latest_episode(self) -> Optional[PodcastEpisode]:
-        """抓取并解析最新的播客数据"""
+    def fetch_pending_episode(self, state_manager) -> Optional[PodcastEpisode]:
+        """抓取并解析最新的播客数据。如果最新已上传，就接着往下顺延，直到找到一条新的。"""
         logger.info(f"正在获取 RSS 源: {self.rss_url}")
         feed = feedparser.parse(self.rss_url)
         
@@ -20,38 +20,64 @@ class PodcastFetcher:
             logger.error("RSS 源中未找到任何内容。请检查 URL。")
             return None
         
-        # 取最新的一条
-        latest_entry = feed.entries[0]
-        
-        # 解析音频 URL
-        audio_url = None
-        for link in latest_entry.get("links", []):
-            if link.get("type", "").startswith("audio/") or link.get("href", "").endswith((".mp3", ".m4a")):
-                audio_url = link.get("href")
-                break
-                
-        if not audio_url:
-            logger.warning("未能从 RSS 中直接找到音频链接字段，尝试其他解析方式。")
-            return None
+        # 按照 RSS 提供的时间顺序（通常是从最新到最旧）遍历
+        for entry in feed.entries:
+            # 1. 解析音频 URL
+            audio_url = None
+            for link in entry.get("links", []):
+                if link.get("type", "").startswith("audio/") or link.get("href", "").endswith((".mp3", ".m4a")):
+                    audio_url = link.get("href")
+                    break
+                    
+            if not audio_url:
+                continue
 
-        # 解析封面 URL (尝试从 entry 中获取，如果失败则尝试源的通用封面)
-        cover_url = None
-        if "image" in latest_entry and "href" in latest_entry.image:
-            cover_url = latest_entry.image.href
-        elif "image" in feed.feed and "href" in feed.feed.image:
-            cover_url = feed.feed.image.href
+            episode_id = entry.get("id", entry.get("link", audio_url))
             
-        episode = PodcastEpisode(
-            id=latest_entry.get("id", latest_entry.get("link", audio_url)),
-            title=latest_entry.get("title", "未命名播客"),
-            description=clean_description(latest_entry.get("description", "")),
-            audio_url=audio_url,
-            cover_url=cover_url,
-            published_date=latest_entry.get("published", "")
-        )
-        
-        logger.info(f"成功解析到最新播客: {episode.title}")
-        return episode
+            # 2. 从 feedparser 或者 itunes 标签中获取季/集信息
+            season_num = entry.get("itunes_season", "")
+            episode_num = entry.get("itunes_episode", "")
+            original_title = entry.get("title", "未命名播客")
+            
+            prefix = ""
+            if season_num and episode_num:
+                prefix = f"S{season_num}E{episode_num} - "
+            elif episode_num:
+                prefix = f"E{episode_num} - "
+                
+            # 拼接作为最终用于展示与排重用的 Title
+            if prefix and not original_title.startswith(prefix.replace(" -", "")):
+                final_title = f"{prefix}{original_title}"
+            else:
+                final_title = original_title
+
+            # 3. 询问排重中心这集是否发过（双重校验 id 与拼装过的标题）
+            if state_manager.is_uploaded(episode_id, final_title):
+                continue
+                
+            # === 如果顺利走到这里，证明我们找到了“第一个还没搬过的全新播客” ===
+            
+            # 4. 获取封面（从集 或者 顶层）
+            cover_url = None
+            if "image" in entry and "href" in entry.image:
+                cover_url = entry.image.href
+            elif "image" in feed.feed and "href" in feed.feed.image:
+                cover_url = feed.feed.image.href
+                
+            episode = PodcastEpisode(
+                id=episode_id,
+                title=final_title,
+                description=clean_description(entry.get("description", "")),
+                audio_url=audio_url,
+                cover_url=cover_url,
+                published_date=entry.get("published", "")
+            )
+            
+            logger.info(f"成功锁定未搬运的分集: {episode.title}")
+            return episode
+
+        logger.info("🎉 检查完毕，最新与过往播客均已存在搬运记录，暂无新内容！")
+        return None
 
     def download_assets(self, episode: PodcastEpisode) -> bool:
         """下载音频和图片封面到本地目录"""

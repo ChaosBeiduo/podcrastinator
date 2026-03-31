@@ -15,20 +15,15 @@ def main() -> None:
     # 1. 检查状态记录
     state_manager = StateManager(config.state_file)
     
-    # 2. 抓取 RSS 最新分集
+    # 2. 抓取被漏掉的或者最新待搬运的一集
     fetcher = PodcastFetcher(config.podcast_rss_url, config.download_dir)
-    episode = fetcher.fetch_latest_episode()
+    episode = fetcher.fetch_pending_episode(state_manager)
     
     if not episode:
-        logger.error("获取博客失败，流程终止。")
-        sys.exit(1)
-
-    # 3. 避免重复上传判定
-    if state_manager.is_uploaded(episode.id):
-        logger.info(f"⏭️ 播客 '{episode.title}' 已存在上传记录，跳过本次执行。")
+        # fetch_pending_episode 为空代表列表所有的都发完了
         sys.exit(0)
         
-    # 4. 下载本地需要的素材
+    # 3. 下载本地需要的素材（针对这一集）
     if not fetcher.download_assets(episode):
         logger.error("媒体资源下载失败，流程终止。")
         sys.exit(1)
