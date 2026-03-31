@@ -1,0 +1,96 @@
+{# 这个局部的行 HTML 组件，被用于主页循环渲染，也被用于 HTMX 局部异步刷新拉回新页面装载代替旧行 #}
+{% set tr_id = "ep-row-" ~ ep.id | replace(' ', '') | replace('/', '') | replace('+', '') | replace('=', '') %}
+
+{# 判断是否处于长队列运行状态之一 #}
+{% set is_processing = (ep.download_status.value == "downloading" or ep.upload_status.value == "uploading") %}
+
+<!-- 当 is_processing 时，赋予行自动轮询机制 (every 2s)，并自动替换本段 html 保持状态机更新 -->
+<tr id="{{ tr_id }}" 
+    {% if is_processing %}
+        hx-get="/api/podcast/{{ podcast.id }}/episodes/{{ ep.id }}/status"
+        hx-trigger="every 2s"
+        hx-swap="outerHTML"
+    {% endif %}
+>
+    <!-- 列 1: 基础信息 -->
+    <td>
+        <strong>{{ ep.title | truncate(60) }}</strong><br/>
+        <small style="color: var(--pico-muted-color);">{% if ep.description_text %}{{ ep.description_text | truncate(80) }}{% else %}无备注{% endif %}</small>
+    </td>
+    
+    <!-- 列 2: 日期 -->
+    <td>
+        <small>{{ ep.published_at[:16] if ep.published_at else "Unknown" }}</small>
+    </td>
+    
+    <!-- 列 3: 彩色徽章状态 -->
+    <td>
+        <div style="display: flex; flex-direction: column; gap: 0.25rem;">
+            <!-- 下载态 -->
+            {% if ep.download_status.value == "downloaded" %}
+                <span class="badge success">💾 已下载本地</span>
+            {% elif ep.download_status.value == "downloading" %}
+                <span class="badge warning" aria-busy="true">💾 正在拉取中...</span>
+            {% elif ep.download_status.value == "download_failed" %}
+                <span class="badge error" title="Failed">💾 下载异常</span>
+            {% else %}
+                <span class="badge">💾 未下载</span>
+            {% endif %}
+
+            <!-- 上传态 -->
+            {% if ep.upload_status.value == "uploaded" %}
+                <span class="badge success">🚀 已发布线上</span>
+            {% elif ep.upload_status.value == "uploading" %}
+                <span class="badge warning" aria-busy="true">🚀 驱动器调度中...</span>
+            {% elif ep.upload_status.value == "upload_failed" %}
+                <span class="badge error" title="{{ ep.upload_error }}">🚀 发布失败拦截</span>
+            {% else %}
+                <span class="badge">🚀 等待指令</span>
+            {% endif %}
+        </div>
+    </td>
+    
+    <!-- 列 4: 行动按钮组 -->
+    <td>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            
+            <!-- 未完全下载前 或 下载报错了，提供下载入口 -->
+            {% if ep.download_status.value != "downloading" and ep.download_status.value != "downloaded" %}
+            <button class="secondary action-btn"
+                    hx-post="/api/podcast/{{ podcast.id }}/episodes/{{ ep.id }}/download"
+                    hx-target="#{{ tr_id }}"
+                    hx-swap="outerHTML">
+                📥 下载资源
+            </button>
+            {% endif %}
+
+            <!-- 下载完成且没有任何执行队列，出现发送入口 -->
+            {% if ep.download_status.value == "downloaded" and ep.upload_status.value != "uploadিং" and ep.upload_status.value != "uploaded" and ep.upload_status.value != "uploading" %}
+            <button class="contrast action-btn"
+                    hx-post="/api/podcast/{{ podcast.id }}/episodes/{{ ep.id }}/upload"
+                    hx-target="#{{ tr_id }}"
+                    hx-swap="outerHTML">
+                📡 推送平台
+            </button>
+            {% endif %}
+            
+            <!-- 若上传出错补发，依然可复现点击上传流程 -->
+            {% if ep.upload_status.value == "uploaded" or ep.upload_status.value == "upload_failed" %}
+            <button class="outline action-btn"
+                    hx-post="/api/podcast/{{ podcast.id }}/episodes/{{ ep.id }}/upload"
+                    hx-target="#{{ tr_id }}"
+                    hx-swap="outerHTML">
+                🔄 强制重抛
+            </button>
+            {% endif %}
+            
+        </div>
+        
+        <!-- 附带抛错原因方便除错 -->
+        {% if ep.upload_error %}
+        <small style="color: var(--pico-del-color); display: block; margin-top: 0.5rem; max-width: 250px;">
+            被拦截: {{ ep.upload_error | truncate(50) }}
+        </small>
+        {% endif %}
+    </td>
+</tr>
