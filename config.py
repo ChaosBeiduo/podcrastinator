@@ -22,6 +22,7 @@ class AppConfig(BaseModel):
     audio_upload_selector: str = os.getenv("AUDIO_UPLOAD_SELECTOR", "input[type='file'][accept='audio/*']")
     cover_upload_selector: str = os.getenv("COVER_UPLOAD_SELECTOR", "input[type='file'][accept='image/*']")
     next_button_selector: str = os.getenv("NEXT_BUTTON_SELECTOR", "button:has-text('下一步')")
+    if_read_checkbox_selector: str = os.getenv("IF_READ_CHECKBOX_SELECTOR", "input[type='checkbox']")
     submit_button_selector: str = os.getenv("SUBMIT_BUTTON_SELECTOR", "button[type='submit']")
 
 config = AppConfig()

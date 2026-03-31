@@ -101,8 +101,12 @@ class PodcastUploader:
             if episode.local_cover_path:
                 logger.info(f"上传封面文件: {episode.local_cover_path.name}")
                 page.locator(config.cover_upload_selector).set_input_files(str(episode.local_cover_path))
-                # 等待封面上传完毕
+                # 给封面图留一点上传到云端生成预览的时间（避免直接点提交报错）
                 page.wait_for_timeout(3000)
+            
+            logger.info("勾选已阅读相关协议/规则框...")
+            # 有些业务自己画的 Checkbox 会被遮挡，保险起见可以使用 force=True 强制点击
+            page.locator(config.if_read_checkbox_selector).click()
             
             logger.info("点击【提交/完成】发布按钮！")
             page.locator(config.submit_button_selector).click()
