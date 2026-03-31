@@ -1,5 +1,7 @@
 import json
 import re
+import datetime
+import email.utils
 from pathlib import Path
 from typing import List, Optional
 from core.models import PodcastConfig, EpisodeMetadata
@@ -84,8 +86,17 @@ class StorageManager:
                     except Exception as e:
                         print(f"Error loading {meta_file}: {e}")
                         
-        # 按照发布时间倒序排列
-        eps.sort(key=lambda x: x.published_at or "", reverse=True)
+        def _parse_pub_date(date_str: str) -> datetime.datetime:
+            if not date_str:
+                return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+            try:
+                return email.utils.parsedate_to_datetime(date_str)
+            except Exception:
+                # 兼容非常规时间的保底处理
+                return datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
+                
+        # 按照发布时间倒序排列（从最新到最旧）
+        eps.sort(key=lambda x: _parse_pub_date(x.published_at), reverse=True)
         return eps
 
     @staticmethod
