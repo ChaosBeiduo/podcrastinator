@@ -26,6 +26,9 @@
         <label for="title" style="margin-top: 1rem;">播客展示名称</label>
         <input type="text" id="title" name="title" value="{{ podcast.title if podcast else '' }}" required placeholder="如: Google 开发者播客">
         
+        <label for="desc" style="margin-top: 1rem;">简短的频道描述</label>
+        <textarea id="desc" name="desc" placeholder="管理本地缓存与上传执行进度" rows="2">{{ podcast.desc if podcast else '' }}</textarea>
+        
         <label for="rss_url" style="margin-top: 1rem;">真正的 RSS 订阅链接</label>
         <input type="url" id="rss_url" name="rss_url" value="{{ podcast.rss_url if podcast else '' }}" required placeholder="https://feed.domain.com/...">
         

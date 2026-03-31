@@ -81,10 +81,11 @@ async def save_edited_podcast(
     podcast_id: str,
     id: str = Form(...),
     title: str = Form(...),
+    desc: str = Form(""),
     rss_url: str = Form(...),
     target_upload_url: str = Form(...)
 ):
-    new_pod = PodcastConfig(id=id, title=title, rss_url=rss_url, target_upload_url=target_upload_url)
+    new_pod = PodcastConfig(id=id, title=title, desc=desc, rss_url=rss_url, target_upload_url=target_upload_url)
     StorageManager.update_podcast(old_id=podcast_id, new_podcast=new_pod)
     return RedirectResponse(f"/podcast/{id}", status_code=303)
 
@@ -101,10 +102,11 @@ async def new_podcast_page(request: Request):
 async def create_new_podcast(
     id: str = Form(...),
     title: str = Form(...),
+    desc: str = Form(""),
     rss_url: str = Form(...),
     target_upload_url: str = Form(...)
 ):
-    new_pod = PodcastConfig(id=id, title=title, rss_url=rss_url, target_upload_url=target_upload_url)
+    new_pod = PodcastConfig(id=id, title=title, desc=desc, rss_url=rss_url, target_upload_url=target_upload_url)
     StorageManager.save_podcast(new_pod)
     return RedirectResponse(f"/podcast/{id}", status_code=303)
 

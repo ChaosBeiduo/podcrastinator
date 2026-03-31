@@ -40,5 +40,6 @@ class EpisodeMetadata(BaseModel):
 class PodcastConfig(BaseModel):
     id: str
     title: str
+    desc: str = ""
     rss_url: str
     target_upload_url: str
