@@ -95,6 +95,18 @@ class PodcastUploader:
             logger.info(f"填写标题: {episode.title}")
             page.locator(config.title_selector).fill(episode.title)
             
+            # 💡 展开隐藏的“丰富文章信息”面板
+            logger.info("展开“丰富文章信息”面板...")
+            # 定位折叠面板的触发按钮
+            expand_btn = page.locator(".arrow_header.articleInfo")
+            if expand_btn.count() > 0:
+                # 如果发现面板是未展开状态，则点击它
+                if expand_btn.first.get_attribute("aria-expanded") == "false":
+                    # 由于里面包含 span 和 img，为确保点到触发区，我们点外层 div
+                    expand_btn.first.click(force=True)
+                    # 等待 Bootstrap CSS 展开动画完成 (0.5s~1s)
+                    page.wait_for_timeout(1000)
+            
             logger.info("填写描述...")
             page.locator(config.desc_selector).fill(episode.description)
             
@@ -106,14 +118,16 @@ class PodcastUploader:
             
             logger.info("勾选已阅读相关协议/规则框...")
             # 有些业务自己画的 Checkbox 会被遮挡，保险起见可以使用 force=True 强制点击
-            page.locator(config.if_read_checkbox_selector).click()
+            page.locator(config.if_read_checkbox_selector).click(force=True)
             
-            logger.info("点击【提交/完成】发布按钮！")
-            page.locator(config.submit_button_selector).click()
+            logger.info("点击【提交/完成】发布按钮并验证成功状态...")
             
-            # TODO: 判断成功的特征标识，比如等待“上传成功”元素的出现
-            # page.wait_for_selector("text='Upload Successful'", timeout=120000)
-            page.wait_for_timeout(5000) 
+            # 监听点击按钮后的下一个页面跳转（导航）作为成功的确认指标
+            # 60 秒内如果发生 URL 跳转不报错，就认为是成功的
+            with page.expect_navigation(timeout=60000):
+                page.locator(config.submit_button_selector).click()
+                
+            logger.info("👌 检测到页面成功跳转，确认上传完成！")
             
             logger.info("✅ 自动化分步上传流程顺利完成！")
             return True
