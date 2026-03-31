@@ -64,9 +64,18 @@ class PodcastUploaderService:
                 page.goto(target_url)
                 page.wait_for_load_state("networkidle")
                 
-                # 音频预交火
+                import os
+                import math
+                
+                # 音频预交火，动态基于体积和 1.5MB/s 计算预估挂起时间
+                audio_size_bytes = os.path.getsize(str(audio_path))
+                audio_size_mb = audio_size_bytes / (1024 * 1024)
+                wait_seconds = max(10, math.ceil(audio_size_mb / 1.5))
+                wait_ms = wait_seconds * 1000
+                
+                logger.info(f"装载音频文件 ({audio_size_mb:.1f}MB)，以保守速度 1.5MB/s 预估，页面将挂起等待 {wait_seconds} 秒...")
                 page.locator(config.audio_upload_selector).set_input_files(str(audio_path))
-                page.wait_for_timeout(10000)
+                page.wait_for_timeout(wait_ms)
                 page.locator(config.next_button_selector).click()
                 
                 # 进入子页面
