@@ -1,24 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
 <nav aria-label="breadcrumb">
-  <ul>
-    <li><a href="/">Dashboard 返回仪表盘</a></li>
-    <li>{{ podcast.title }}</li>
-  </ul>
+    <ul>
+        <li><a href="/">Dashboard</a></li>
+        <li>{{ podcast.title }}</li>
+    </ul>
 </nav>
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 1rem;">
     <div>
-        <h2 style="margin-bottom: 0px;">{{ podcast.title }}</h2>
-        <p style="margin-bottom: 0px; color: var(--pico-muted-color);">管理本地缓存与上传执行进度</p>
+        <h2 style="margin-bottom: 0px;">
+            {{ podcast.title }}
+            <a href="/podcast/{{ podcast.id }}/edit" style="font-size: 1rem; margin-left: 0.5rem;" class="secondary">✏️
+                修改配置</a>
+        </h2>
+        <p style="margin-bottom: 0px; color: var(--pico-muted-color);">
+            {{ podcast.desc }}
+        </p>
     </div>
-    
+
     <!-- 引入 HTMX 特性：不跳转的情况下刷新元数据 -->
-    <button hx-post="/api/podcast/{{ podcast.id }}/sync" 
-            hx-target="#sync-status" 
-            hx-indicator="#sync-spinner"
-            class="contrast"
-            style="width: 200px;">
+    <button hx-post="/api/podcast/{{ podcast.id }}/sync" hx-target="#sync-status" hx-indicator="#sync-spinner"
+        class="contrast" style="width: 200px;">
         🔄 立即抓取最新源列表
     </button>
 </div>
@@ -39,11 +42,11 @@
         </thead>
         <tbody>
             {% for ep in episodes %}
-                {% include 'components/episode_row.html' %}
+            {% include 'components/episode_row.html' %}
             {% else %}
-                <tr>
-                    <td colspan="4" style="text-align: center; padding: 2rem;">本地没有找到该播客的分集索引。请点击右上角【抓取最新源列表】按钮同步。</td>
-                </tr>
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 2rem;">本地没有找到该播客的分集索引。请点击右上角【抓取最新源列表】按钮同步。</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>

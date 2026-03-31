@@ -1,7 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 import uvicorn
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import FastAPI, Request, BackgroundTasks, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -68,6 +68,45 @@ async def podcast_detail(request: Request, podcast_id: str):
         name="podcast.html", 
         context={"podcast": podcast, "episodes": eps}
     )
+
+@app.get("/podcast/{podcast_id}/edit", response_class=HTMLResponse)
+async def edit_podcast_page(request: Request, podcast_id: str):
+    podcast = StorageManager.get_podcast(podcast_id)
+    if not podcast:
+        return RedirectResponse("/")
+    return templates.TemplateResponse(request, "edit_podcast.html", {"podcast": podcast})
+
+@app.post("/podcast/{podcast_id}/edit")
+async def save_edited_podcast(
+    podcast_id: str,
+    id: str = Form(...),
+    title: str = Form(...),
+    rss_url: str = Form(...),
+    target_upload_url: str = Form(...)
+):
+    new_pod = PodcastConfig(id=id, title=title, rss_url=rss_url, target_upload_url=target_upload_url)
+    StorageManager.update_podcast(old_id=podcast_id, new_podcast=new_pod)
+    return RedirectResponse(f"/podcast/{id}", status_code=303)
+
+@app.post("/podcast/{podcast_id}/delete")
+async def delete_podcast(podcast_id: str):
+    StorageManager.delete_podcast(podcast_id)
+    return RedirectResponse("/", status_code=303)
+
+@app.get("/new", response_class=HTMLResponse)
+async def new_podcast_page(request: Request):
+    return templates.TemplateResponse(request, "edit_podcast.html", {"podcast": None})
+
+@app.post("/new")
+async def create_new_podcast(
+    id: str = Form(...),
+    title: str = Form(...),
+    rss_url: str = Form(...),
+    target_upload_url: str = Form(...)
+):
+    new_pod = PodcastConfig(id=id, title=title, rss_url=rss_url, target_upload_url=target_upload_url)
+    StorageManager.save_podcast(new_pod)
+    return RedirectResponse(f"/podcast/{id}", status_code=303)
 
 @app.post("/api/podcast/{podcast_id}/sync")
 async def sync_podcast(podcast_id: str):

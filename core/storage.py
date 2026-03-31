@@ -67,6 +67,35 @@ class StorageManager:
         with open(CONFIG_FILE, "w", encoding="utf-8") as f:
             json.dump([p.model_dump() for p in podcasts], f, ensure_ascii=False, indent=2)
 
+    @staticmethod
+    def update_podcast(old_id: str, new_podcast: PodcastConfig):
+        podcasts = StorageManager.load_all_podcasts()
+        for i, p in enumerate(podcasts):
+            if p.id == old_id:
+                podcasts[i] = new_podcast
+                break
+                
+        # 物理文件夹改名逻辑（如果ID变了，原资源也不能丢）
+        if old_id != new_podcast.id:
+            old_dir = StorageManager._get_podcast_dir(old_id)
+            new_dir = StorageManager._get_podcast_dir(new_podcast.id)
+            if old_dir.exists() and not new_dir.exists():
+                old_dir.rename(new_dir)
+                
+        # 重新持久化配置
+        CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump([p.model_dump() for p in podcasts], f, ensure_ascii=False, indent=2)
+
+    @staticmethod
+    def delete_podcast(podcast_id: str):
+        podcasts = [p for p in StorageManager.load_all_podcasts() if p.id != podcast_id]
+        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump([p.model_dump() for p in podcasts], f, ensure_ascii=False, indent=2)
+            
+        # 同时删除物理缓存，需谨慎，或者留着由用户自己删
+        # 暂时只删列表，物理文件做软保留，这有助于安全
+
     # --- 各分集级的 CRUD ---
 
     @staticmethod

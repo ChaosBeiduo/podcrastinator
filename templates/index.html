@@ -2,7 +2,7 @@
 {% block content %}
 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
     <h2>Podcast Library</h2>
-    <a href="#" class="secondary outline action-btn" role="button">配置新播客 (待开发)</a>
+    <a href="/new" class="secondary outline action-btn" role="button">配置新播客频道</a>
 </div>
 
 <div class="grid">
@@ -10,13 +10,13 @@
     <a href="/podcast/{{ stat.podcast.id }}" class="card">
         <h3>{{ stat.podcast.title }}</h3>
         <p style="color: var(--pico-muted-color); font-size: 0.875rem;">
-            <strong>源:</strong> {{ stat.podcast.rss_url | truncate(50) }}<br/>
-            <strong>平台:</strong> {{ stat.podcast.target_upload_url | truncate(50) }}
+            <strong>Source:</strong> {{ stat.podcast.rss_url | truncate(50) }}<br />
+            <strong>Platform:</strong> {{ stat.podcast.target_upload_url | truncate(50) }}
         </p>
         <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-            <span class="badge">共 {{ stat.total_eps }} 集</span>
-            <span class="badge info">本地下载: {{ stat.downloaded }}</span>
-            <span class="badge success">已发布: {{ stat.uploaded }}</span>
+            <span class="badge">Total {{ stat.total_eps }} episodes</span>
+            <span class="badge info">Downloaded: {{ stat.downloaded }}</span>
+            <span class="badge success">Uploaded: {{ stat.uploaded }}</span>
         </div>
     </a>
     {% else %}
