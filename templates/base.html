@@ -4,102 +4,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Podcrastinator Web Console</title>
-    <!-- 使用 Pico CSS 替代 Bootstrap 以满足 Vanilla CSS 和极简审美的需求 -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
-
-    <!-- 引入核心：HTMX 用于不刷新页面触发异步 Python 方法并更新组件状态 -->
+    <title>Podcrastinator Control Panel</title>
+    <link rel="stylesheet" href="/static/app.css">
+    <!-- HTMX for reactive async UI updates -->
     <script src="https://unpkg.com/htmx.org@1.9.11"></script>
-    <style>
-        :root {
-            --pico-border-radius: 0.75rem;
-        }
-
-        main {
-            padding-top: 2rem;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border-radius: 0.5rem;
-            background-color: var(--pico-secondary-background);
-            color: var(--pico-secondary-inverse);
-            white-space: nowrap;
-        }
-
-        .badge.success {
-            background-color: #2e7d32;
-            color: white;
-        }
-
-        .badge.warning {
-            background-color: #f57c00;
-            color: white;
-        }
-
-        .badge.error {
-            background-color: #c62828;
-            color: white;
-        }
-
-        .badge.info {
-            background-color: #1565c0;
-            color: white;
-        }
-
-        .card {
-            padding: 1.5rem;
-            border-radius: var(--pico-border-radius);
-            background: var(--pico-card-background-color);
-            box-shadow: var(--pico-card-box-shadow);
-            margin-bottom: 2rem;
-            transition: transform 0.2s, box-shadow 0.2s;
-            text-decoration: none;
-            color: inherit;
-            display: block;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-        }
-
-        table {
-            border-collapse: separate;
-            border-spacing: 0;
-            width: 100%;
-        }
-
-        th,
-        td {
-            padding: 1rem;
-            border-bottom: 1px solid var(--pico-muted-border-color);
-            vertical-align: middle;
-        }
-
-        /* Actions button layout in table */
-        .action-btn {
-            margin-bottom: 0;
-            margin-right: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.875rem;
-        }
-    </style>
 </head>
 
 <body>
-    <nav style="width: 100%; border-bottom: 1px solid var(--pico-muted-border-color);">
-        <ul class="container" style="margin: 0 auto;">
-            <li><a href="/">Podcrastinator</a></li>
-        </ul>
-    </nav>
+    <div class="app-shell">
+        <nav class="app-nav">
+            <div class="brand">
+                <a href="/">Podcrastinator</a>
+            </div>
+        </nav>
 
-    <main class="container">
-        {% block content %}{% endblock %}
-    </main>
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+    </div>
 </body>
 
 </html>

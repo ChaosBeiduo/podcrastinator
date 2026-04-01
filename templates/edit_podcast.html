@@ -1,48 +1,64 @@
 {% extends "base.html" %}
 {% block content %}
-<nav aria-label="breadcrumb">
-  <ul>
-    <li><a href="/">Dashboard</a></li>
-    {% if podcast %}
-        <li><a href="/podcast/{{ podcast.id }}">{{ podcast.title }}</a></li>
-        <li>编辑选项</li>
-    {% else %}
-        <li>新频道配置</li>
-    {% endif %}
-  </ul>
-</nav>
+<div class="page-header">
+    <div>
+        <h1>{% if podcast %}Edit Channel Config{% else %}New Channel Config{% endif %}</h1>
+        <p>Edit the physical mapping, RSS feeds, and target integration points.</p>
+    </div>
+</div>
 
-<article style="max-width: 600px; margin: 0 auto; margin-top: 2rem;">
-    <header>
-        <h2 style="margin-bottom: 0;">{% if podcast %}更新播客通道配置{% else %}注册崭新播客通道{% endif %}</h2>
-    </header>
-    <form action="/podcast/{{ podcast.id ~ '/edit' if podcast else 'new' }}" method="post">
-        
-        <label for="id">本地档案文件夹缩写 (Path ID)</label>
-        <!-- 如果是修改，通过 input value 可以让原名叫 default_podcast 的改掉 -->
-        <input type="text" id="id" name="id" value="{{ podcast.id if podcast else '' }}" required placeholder="例: made_by_google" aria-describedby="id-helper">
-        <small id="id-helper">这决定了你的录音、元数据将在 `data/podcasts/你的缩写/` 下安置。</small>
-        
-        <label for="title" style="margin-top: 1rem;">播客展示名称</label>
-        <input type="text" id="title" name="title" value="{{ podcast.title if podcast else '' }}" required placeholder="如: Google 开发者播客">
-        
-        <label for="desc" style="margin-top: 1rem;">简短的频道描述</label>
-        <textarea id="desc" name="desc" placeholder="管理本地缓存与上传执行进度" rows="2">{{ podcast.desc if podcast else '' }}</textarea>
-        
-        <label for="rss_url" style="margin-top: 1rem;">真正的 RSS 订阅链接</label>
-        <input type="url" id="rss_url" name="rss_url" value="{{ podcast.rss_url if podcast else '' }}" required placeholder="https://feed.domain.com/...">
-        
-        <label for="target_upload_url" style="margin-top: 1rem;">搬运转存的目标平台 Web 入口</label>
-        <input type="url" id="target_upload_url" name="target_upload_url" value="{{ podcast.target_upload_url if podcast else '' }}" required placeholder="https://my.eudic.net/Ting/uploadFile...">
-        
-        <button type="submit" style="margin-top: 1.5rem;">保存并生效</button>
+<div class="podcast-card">
+    <form action="/podcast/{{ podcast.id ~ '/edit' if podcast else 'new' }}" method="post"
+        style="display: flex; flex-direction: column;">
+
+        <div class="form-group">
+            <label for="id">Local Path Identifier (ID)</label>
+            <input type="text" id="id" name="id" value="{{ podcast.id if podcast else '' }}" required
+                placeholder="e.g. made_by_google">
+            <small>Specifies the data/podcasts/{ID}/ namespace.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="title">Internal Display Title</label>
+            <input type="text" id="title" name="title" value="{{ podcast.title if podcast else '' }}" required
+                placeholder="e.g. Google Developers">
+        </div>
+
+        <div class="form-group">
+            <label for="desc">Channel Description (Optional)</label>
+            <textarea id="desc" name="desc" placeholder="A single line summary"
+                rows="2">{{ podcast.desc if podcast else '' }}</textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="rss_url">Source RSS Link</label>
+            <input type="url" id="rss_url" name="rss_url" value="{{ podcast.rss_url if podcast else '' }}" required
+                placeholder="https://feed.domain...">
+        </div>
+
+        <div class="form-group">
+            <label for="target_upload_url">Target Service Form URL</label>
+            <input type="url" id="target_upload_url" name="target_upload_url"
+                value="{{ podcast.target_upload_url if podcast else '' }}" required
+                placeholder="https://app.platform.com/upload">
+            <small>Point this to the exact DOM page where the input locators are present.</small>
+        </div>
+
+        <div style="margin-top: var(--sp-16); display: flex; gap: var(--sp-12);">
+            <button type="submit" class="btn btn-primary">Save Configuration</button>
+            <a href="/" class="btn btn-ghost" style="text-decoration: none;">Cancel</a>
+        </div>
     </form>
-    {% if podcast %}
-    <footer style="text-align: right;">
-        <form action="/podcast/{{ podcast.id }}/delete" method="post" style="margin-bottom: 0;" onsubmit="return confirm('确认要从列表中彻底移除本播客通道配置吗？这不会删除物理磁盘上已存的文件。')">
-            <button type="submit" class="outline secondary" style="border: none;">危险：删除此播客</button>
-        </form>
-    </footer>
-    {% endif %}
-</article>
+</div>
+
+{% if podcast %}
+<div
+    style="margin-top: var(--sp-24); padding-top: var(--sp-16); border-top: 1px dashed var(--border-strong); text-align: right;">
+    <form action="/podcast/{{ podcast.id }}/delete" method="post" style="margin: 0;"
+        onsubmit="return confirm('Confirm complete structural removal of this podcast config? (Physical media remains)')">
+        <button type="submit" class="btn btn-ghost"
+            style="color: var(--status-error-text); border-color: transparent;">Prune Config Node</button>
+    </form>
+</div>
+{% endif %}
 {% endblock %}

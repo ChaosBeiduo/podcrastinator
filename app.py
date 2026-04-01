@@ -118,7 +118,7 @@ async def sync_podcast(podcast_id: str):
         PodcastFetcherService.sync_episodes(podcast)
         
     return HTMLResponse(
-        "<div class='badge success'>✅ 成功解析数据！请按 F5 刷新网页显示最新。</div>"
+        "<span class='badge badge-success' style='padding: 4px 8px; font-size: 13px; text-transform: none;'>✅ Synced feed! Refresh page to render.</span>"
     )
 
 @app.post("/api/podcast/{podcast_id}/episodes/{episode_id}/download")

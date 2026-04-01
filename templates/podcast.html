@@ -1,43 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
-<nav aria-label="breadcrumb">
-    <ul>
-        <li><a href="/">Dashboard</a></li>
-        <li>{{ podcast.title }}</li>
-    </ul>
-</nav>
-
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; margin-top: 1rem;">
+<div class="page-header">
     <div>
-        <h2 style="margin-bottom: 0px;">
-            {{ podcast.title }}
-            <a href="/podcast/{{ podcast.id }}/edit" style="font-size: 1rem; margin-left: 0.5rem;" class="secondary">✏️
-                修改配置</a>
-        </h2>
-        <p style="margin-bottom: 0px; color: var(--pico-muted-color);">
-            {{ podcast.desc }}
-        </p>
+        <div
+            style="display: flex; align-items: center; justify-content: space-between; gap: var(--sp-8); margin-bottom: var(--sp-8);">
+            <h1 style="margin: 0;">{{ podcast.title }}</h1>
+            <div style="display: flex; gap: var(--sp-8);">
+                <button hx-post="/api/podcast/{{ podcast.id }}/sync" hx-target="#sync-status" class="btn btn-primary">
+                    Sync Feed
+                </button>
+                <a href="/podcast/{{ podcast.id }}/edit" class="btn btn-ghost"
+                    style="padding: 4px 8px; font-size: var(--text-sm);">Edit Config</a>
+            </div>
+        </div>
+        <p>{{ podcast.desc }}</p>
     </div>
-
-    <!-- 引入 HTMX 特性：不跳转的情况下刷新元数据 -->
-    <button hx-post="/api/podcast/{{ podcast.id }}/sync" hx-target="#sync-status" hx-indicator="#sync-spinner"
-        class="contrast" style="width: 200px;">
-        🔄 立即抓取最新源列表
-    </button>
 </div>
 
-<!-- 用于显示同步结果与动画占位 -->
-<div id="sync-spinner" class="htmx-indicator" aria-busy="true">正在解析远端分集...</div>
-<div id="sync-status" style="margin-bottom: 2rem;"></div>
-
-<figure>
-    <table role="grid">
+<div class="episode-table-container">
+    <table class="episode-table">
         <thead>
             <tr>
-                <th scope="col" width="35%">章节名称与描述</th>
-                <th scope="col" width="15%">发布时间</th>
-                <th scope="col" width="20%">处理状态进程</th>
-                <th scope="col" width="30%">调度操作</th>
+                <th width="40%">Episode Info</th>
+                <th width="15%">Published</th>
+                <th width="15%">Status Tracker</th>
+                <th width="30%" style="text-align: right;">Available Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -45,10 +32,14 @@
             {% include 'components/episode_row.html' %}
             {% else %}
             <tr>
-                <td colspan="4" style="text-align: center; padding: 2rem;">本地没有找到该播客的分集索引。请点击右上角【抓取最新源列表】按钮同步。</td>
+                <td colspan="4">
+                    <div class="empty-state">
+                        <p>No episodes fetched yet. Hit "Sync Feed" to populate local index.</p>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-</figure>
+</div>
 {% endblock %}

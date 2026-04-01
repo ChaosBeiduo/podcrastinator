@@ -1,29 +1,34 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-    <h2>Podcast Library</h2>
-    <a href="/new" class="secondary outline action-btn" role="button">Add Podcast</a>
+<div class="page-header">
+    <div>
+        <h1>Podcast Library</h1>
+        <p>Manage your RSS ingestion pipelines and upload states.</p>
+    </div>
+    <a href="/new" class="btn btn-primary" role="button">Add Podcast</a>
 </div>
 
-<div class="grid">
+<div class="dashboard-grid">
     {% for stat in stats %}
-    <a href="/podcast/{{ stat.podcast.id }}" class="card">
+    <a href="/podcast/{{ stat.podcast.id }}" class="podcast-card">
         <h3>{{ stat.podcast.title }}</h3>
-        <p style="color: var(--pico-muted-color); font-size: 0.875rem;">
-            <strong>Source:</strong> {{ stat.podcast.rss_url | truncate(50) }}<br />
-            <strong>Platform:</strong> {{ stat.podcast.target_upload_url | truncate(50) }}
-        </p>
-        <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
-            <span class="badge">Total {{ stat.total_eps }} episodes</span>
-            <span class="badge info">Downloaded: {{ stat.downloaded }}</span>
-            <span class="badge success">Uploaded: {{ stat.uploaded }}</span>
+        <div class="meta">
+            <span><strong>Source:</strong> {{ stat.podcast.rss_url }}</span>
+            <span><strong>Target:</strong> {{ stat.podcast.target_upload_url }}</span>
+        </div>
+        <div class="stats-row">
+            <span class="stat-chip">Total <strong>{{ stat.total_eps }}</strong></span>
+            <span class="stat-chip">Dwn <strong>{{ stat.downloaded }}</strong></span>
+            <span class="stat-chip">Up <strong>{{ stat.uploaded }}</strong></span>
         </div>
     </a>
     {% else %}
-    <article>
-        <h4>欢迎来到控制台 🎉</h4>
-        <p>暂无播客记录。程序启动时默认基于老 `.env` 文件注册了你在跑的博客，如果是空的，请检查并重启。</p>
-    </article>
+    <div class="empty-state">
+        <p>No podcasts configured.</p>
+        <div style="margin-top: var(--sp-16);">
+            <a href="/new" class="btn btn-ghost">Create your first channel</a>
+        </div>
+    </div>
     {% endfor %}
 </div>
 {% endblock %}
