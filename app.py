@@ -160,6 +160,24 @@ async def trigger_upload(podcast_id: str, episode_id: str, background_tasks: Bac
         context={"podcast": StorageManager.get_podcast(podcast_id), "ep": meta}
     )
 
+@app.post("/api/podcast/{podcast_id}/episodes/{episode_id}/mark_uploaded")
+async def mark_uploaded(podcast_id: str, episode_id: str, request: Request):
+    import datetime
+    meta = StorageManager.load_episode_metadata(podcast_id, episode_id)
+    if not meta:
+        return HTMLResponse("无法找到指定元数据", 404)
+        
+    meta.upload_status = UploadStatus.UPLOADED
+    meta.uploaded_at = datetime.datetime.now().isoformat()
+    meta.upload_error = None
+    StorageManager.save_episode_metadata(podcast_id, meta)
+    
+    return templates.TemplateResponse(
+        request=request, 
+        name="components/episode_row.html", 
+        context={"podcast": StorageManager.get_podcast(podcast_id), "ep": meta}
+    )
+
 # 被 HTMX 被动每隔几秒轮询使用的接口，一旦上面的 task 在幕后结束写了盘，这里扫到变化就会吐出最终的静态 html 按钮，并终止自己
 @app.get("/api/podcast/{podcast_id}/episodes/{episode_id}/status")
 async def episode_status(request: Request, podcast_id: str, episode_id: str):

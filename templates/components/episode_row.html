@@ -63,6 +63,14 @@
             </button>
             {% endif %}
 
+            <!-- Manual override to mark as uploaded if done outside the system -->
+            {% if ep.upload_status.value != "uploading" and ep.upload_status.value != "uploaded" %}
+            <button class="btn btn-ghost" hx-post="/api/podcast/{{ podcast.id }}/episodes/{{ ep.id }}/mark_uploaded"
+                hx-target="#{{ tr_id }}" hx-swap="outerHTML" style="font-size: 11px; padding: 4px 8px; border-style: dotted;">
+                Mark Done
+            </button>
+            {% endif %}
+
             <!-- Upload is done or failed, allow retry but de-emphasize button -->
             {% if ep.upload_status.value == "uploaded" or ep.upload_status.value == "upload_failed" %}
             <button class="btn btn-ghost" hx-post="/api/podcast/{{ podcast.id }}/episodes/{{ ep.id }}/upload"
